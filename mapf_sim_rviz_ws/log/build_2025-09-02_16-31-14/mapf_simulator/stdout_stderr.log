@@ -1,0 +1,53 @@
+running egg_info
+creating ../build/mapf_simulator/mapf_simulator.egg-info
+writing ../build/mapf_simulator/mapf_simulator.egg-info/PKG-INFO
+writing dependency_links to ../build/mapf_simulator/mapf_simulator.egg-info/dependency_links.txt
+writing entry points to ../build/mapf_simulator/mapf_simulator.egg-info/entry_points.txt
+writing requirements to ../build/mapf_simulator/mapf_simulator.egg-info/requires.txt
+writing top-level names to ../build/mapf_simulator/mapf_simulator.egg-info/top_level.txt
+writing manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+reading manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+writing manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/mnerd/mapf_sim_ws/build/mapf_simulator/build
+creating /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib
+creating /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+copying mapf_simulator/mapf_simulator_node.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+copying mapf_simulator/gui_control_node.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+copying mapf_simulator/simple_mapf_node.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+copying mapf_simulator/__init__.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+copying mapf_simulator/simple_test_node.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+running install
+running install_lib
+creating /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/mapf_simulator_node.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/gui_control_node.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/simple_mapf_node.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/__init__.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/simple_test_node.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/mapf_simulator_node.py to mapf_simulator_node.cpython-310.pyc
+byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/gui_control_node.py to gui_control_node.cpython-310.pyc
+byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/simple_mapf_node.py to simple_mapf_node.cpython-310.pyc
+byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/simple_test_node.py to simple_test_node.cpython-310.pyc
+running install_data
+creating /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/ament_index
+creating /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/ament_index/resource_index
+creating /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/ament_index/resource_index/packages
+copying resource/mapf_simulator -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/ament_index/resource_index/packages
+copying package.xml -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator
+creating /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator/launch
+copying launch/mapf_simulator.launch.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator/launch
+copying launch/mapf_simulator_fixed.launch.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator/launch
+creating /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator/config
+copying config/mapf_simulator.rviz -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator/config
+copying config/mapf_simulator_fixed.rviz -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/share/mapf_simulator/config
+running install_egg_info
+Copying ../build/mapf_simulator/mapf_simulator.egg-info to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator-0.0.0-py3.10.egg-info
+running install_scripts
+Installing gui_control_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+Installing mapf_simulator_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+Installing simple_mapf_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+Installing simple_test_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+writing list of installed files to '/home/mnerd/mapf_sim_ws/build/mapf_simulator/install.log'

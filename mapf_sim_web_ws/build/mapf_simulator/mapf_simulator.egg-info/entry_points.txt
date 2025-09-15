@@ -1,0 +1,6 @@
+[console_scripts]
+gui_control_node = mapf_simulator.gui_control_node:main
+mapf_simulator_node = mapf_simulator.mapf_simulator_node:main
+simple_mapf_node = mapf_simulator.simple_mapf_node:main
+simple_test_node = mapf_simulator.simple_test_node:main
+

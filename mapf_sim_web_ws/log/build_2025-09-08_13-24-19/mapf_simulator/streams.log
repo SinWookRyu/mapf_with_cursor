@@ -1,0 +1,24 @@
+[0.309s] Invoking command in '/home/mnerd/mapf_sim_web_ws/mapf_simulator': PYTHONPATH=/home/mnerd/mapf_sim_web_ws/build/mapf_simulator/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mapf_simulator build --build-base /home/mnerd/mapf_sim_web_ws/build/mapf_simulator/build install --record /home/mnerd/mapf_sim_web_ws/build/mapf_simulator/install.log --single-version-externally-managed install_data
+[0.421s] running egg_info
+[0.421s] writing ../build/mapf_simulator/mapf_simulator.egg-info/PKG-INFO
+[0.421s] writing dependency_links to ../build/mapf_simulator/mapf_simulator.egg-info/dependency_links.txt
+[0.421s] writing entry points to ../build/mapf_simulator/mapf_simulator.egg-info/entry_points.txt
+[0.421s] writing requirements to ../build/mapf_simulator/mapf_simulator.egg-info/requires.txt
+[0.421s] writing top-level names to ../build/mapf_simulator/mapf_simulator.egg-info/top_level.txt
+[0.422s] reading manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+[0.423s] writing manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+[0.423s] running build
+[0.423s] running build_py
+[0.423s] running install
+[0.423s] running install_lib
+[0.423s] running install_data
+[0.423s] running install_egg_info
+[0.424s] removing '/home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator-0.0.0-py3.10.egg-info' (and everything under it)
+[0.425s] Copying ../build/mapf_simulator/mapf_simulator.egg-info to /home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator-0.0.0-py3.10.egg-info
+[0.425s] running install_scripts
+[0.439s] Installing gui_control_node script to /home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/mapf_simulator
+[0.439s] Installing mapf_simulator_node script to /home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/mapf_simulator
+[0.439s] Installing simple_mapf_node script to /home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/mapf_simulator
+[0.439s] Installing simple_test_node script to /home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/mapf_simulator
+[0.439s] writing list of installed files to '/home/mnerd/mapf_sim_web_ws/build/mapf_simulator/install.log'
+[0.453s] Invoked command in '/home/mnerd/mapf_sim_web_ws/mapf_simulator' returned '0': PYTHONPATH=/home/mnerd/mapf_sim_web_ws/build/mapf_simulator/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mnerd/mapf_sim_web_ws/install/mapf_simulator/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mapf_simulator build --build-base /home/mnerd/mapf_sim_web_ws/build/mapf_simulator/build install --record /home/mnerd/mapf_sim_web_ws/build/mapf_simulator/install.log --single-version-externally-managed install_data

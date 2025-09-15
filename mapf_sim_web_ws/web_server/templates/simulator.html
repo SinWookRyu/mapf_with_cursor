@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAPF 시뮬레이터 - 웹 버전</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(280px, 350px) 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .control-panel {
+                max-height: 400px;
+                overflow-y: auto;
+                min-width: 250px;
+                max-width: 100%;
+                resize: none;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .control-panel {
+                min-width: 350px;
+                max-width: 450px;
+            }
+        }
+        
+        /* 1920x1200 해상도의 125% 상태 (1536x960) 최적화 */
+        @media (min-width: 1536px) and (max-height: 960px) {
+            .simulation-canvas {
+                max-height: 85vh;
+            }
+            
+            .canvas-container {
+                max-height: calc(85vh - 180px);
+            }
+            
+            .control-panel {
+                min-width: 320px;
+                max-width: 380px;
+            }
+        }
+        
+        .control-panel {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+            min-width: 300px;
+            max-width: 500px;
+            resize: horizontal;
+            overflow: auto;
+            position: relative;
+        }
+        
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 8px;
+            height: 100%;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 10;
+        }
+        
+        .resize-handle:hover {
+            background: rgba(0, 123, 255, 0.2);
+        }
+        
+        .resize-handle:active {
+            background: rgba(0, 123, 255, 0.4);
+        }
+        
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 2px;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 1px;
+            opacity: 0.6;
+        }
+        
+        .simulation-canvas {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        
+        .control-section {
+            margin-bottom: 15px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .simulation-controls {
+            min-height: 120px;
+        }
+        
+        .control-section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 500;
+            color: #555;
+            font-size: 13px;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+            margin-bottom: 8px;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running {
+            background: #28a745;
+        }
+        
+        .status-stopped {
+            background: #dc3545;
+        }
+        
+        .canvas-container {
+            text-align: center;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 0;
+            max-height: calc(90vh - 200px); /* 헤더와 여백 고려 */
+            overflow: hidden;
+        }
+        
+        #simCanvas {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+        
+        .info-panel {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .agent-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            padding: 4px;
+            background: white;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .collision-warning {
+            color: #dc3545;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+        
+        .collision-prediction {
+            color: #fd7e14;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .tab-container {
+            margin-bottom: 15px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 13px;
+        }
+        
+        .tab-button.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 제어 패널 -->
+        <div class="control-panel" id="controlPanel">
+            <div class="resize-handle" id="resizeHandle"></div>
+            <h2 style="font-size: 18px; margin: 0 0 15px 0;">MAPF 시뮬레이터 제어</h2>
+            
+            <!-- 시뮬레이션 상태 -->
+            <div class="control-section simulation-controls">
+                <h3>시뮬레이션 상태</h3>
+                <div>
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">중지됨</span>
+                </div>
+                <button class="btn btn-success" id="startStopBtn">시뮬레이션 시작</button>
+                <button class="btn btn-warning" id="resetBtn">시뮬레이션 리셋</button>
+                <button class="btn" id="toggleCollisionZonesBtn">충돌 영역 표시</button>
+            </div>
+            
+            <!-- 탭 컨테이너 -->
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="showTab('basic')">기본 설정</button>
+                    <button class="tab-button" onclick="showTab('agents')">에이전트</button>
+                    <button class="tab-button" onclick="showTab('collision')">충돌 설정</button>
+                </div>
+                
+                <!-- 기본 설정 탭 -->
+                <div id="basic" class="tab-content active">
+                    <div class="control-section">
+                        <h3>기본 설정</h3>
+                        <div class="form-group">
+                            <label for="numAgents">에이전트 수:</label>
+                            <input type="number" id="numAgents" min="1" max="10" value="3">
+                        </div>
+                        <div class="form-group">
+                            <label for="updateRate">업데이트 속도 (Hz):</label>
+                            <input type="number" id="updateRate" min="1" max="30" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="movementMode">움직임 모드:</label>
+                            <select id="movementMode">
+                                <option value="0">연속 모드</option>
+                                <option value="1">그리드 모드</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="gridCellSize">그리드 셀 크기:</label>
+                            <input type="number" id="gridCellSize" min="0.5" max="5.0" step="0.1" value="1.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="gridMoveInterval">그리드 이동 간격 (초):</label>
+                            <input type="number" id="gridMoveInterval" min="0.1" max="5.0" step="0.1" value="1.2">
+                        </div>
+                        <div class="form-group">
+                            <label for="movementSpeed">이동 속도:</label>
+                            <input type="number" id="movementSpeed" min="0.1" max="10.0" step="0.1" value="2.0">
+                        </div>
+                        <button class="btn" onclick="updateBasicSettings()">적용</button>
+                    </div>
+                    
+                    <div class="control-section">
+                        <h3>충돌 회피 프리셋</h3>
+                        <div class="form-group">
+                            <label for="collisionPreset">프리셋 선택:</label>
+                            <select id="collisionPreset" onchange="applyCollisionPreset()">
+                                <option value="custom">사용자 정의</option>
+                                <option value="performance">충돌회피 성능향상</option>
+                                <option value="smooth">부드러운 이동</option>
+                                <option value="fast">빠른 이동</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showDetailedSettings" onchange="toggleDetailedSettings()">
+                                상세 설정 표시
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="control-section" id="detailedSettings" style="display: none;">
+                        <h3>상세 충돌 설정</h3>
+                        <div class="form-group">
+                            <label for="collisionDistance">충돌 감지 거리:</label>
+                            <input type="number" id="collisionDistance" min="0.6" max="5.0" step="0.1" value="1.5">
+                            <small style="color: #666;">최소값: 0.6 (에이전트 반지름의 2배)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="avoidanceStrength">회피 강도:</label>
+                            <input type="number" id="avoidanceStrength" min="0.1" max="10.0" step="0.1" value="2.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="predictionTime">예측 시간 (초):</label>
+                            <input type="number" id="predictionTime" min="0.1" max="2.0" step="0.1" value="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="repulsionPower">반발력 지수:</label>
+                            <input type="number" id="repulsionPower" min="0.1" max="2.0" step="0.1" value="0.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="agentRadius">에이전트 반지름:</label>
+                            <input type="number" id="agentRadius" min="0.1" max="2.0" step="0.1" value="0.3">
+                        </div>
+                        <div class="form-group">
+                            <label for="collisionWaitTime">충돌 대기 시간 (초):</label>
+                            <input type="number" id="collisionWaitTime" min="0.0" max="10.0" step="0.1" value="1.0">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="updateDetailedSettings()">상세 설정 적용</button>
+                            <button class="btn" onclick="resetToDefaults()" style="background: #6c757d;">디폴트 초기화</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 에이전트 탭 -->
+                <div id="agents" class="tab-content">
+                    <div class="control-section">
+                        <h3>에이전트 위치 설정</h3>
+                        <div id="agentPositions">
+                            <!-- 에이전트별 위치 입력 필드가 동적으로 생성됨 -->
+                        </div>
+                        <button class="btn" onclick="updateAgentPositions()">위치 적용</button>
+                    </div>
+                </div>
+                
+                <!-- 충돌 설정 탭 -->
+                <div id="collision" class="tab-content">
+                    <div class="control-section">
+                        <h3>충돌 회피 설정</h3>
+                        <div class="form-group">
+                            <label for="collisionDistance">충돌 거리:</label>
+                            <input type="number" id="collisionDistance" min="0.5" max="5.0" step="0.1" value="1.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="avoidanceStrength">회피 강도:</label>
+                            <input type="number" id="avoidanceStrength" min="0.1" max="10.0" step="0.1" value="2.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="repulsionForce">반발력:</label>
+                            <input type="number" id="repulsionForce" min="0.1" max="10.0" step="0.1" value="1.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="collisionWaitTime">충돌 대기 시간 (초):</label>
+                            <input type="number" id="collisionWaitTime" min="0.0" max="10.0" step="0.1" value="1.0">
+                        </div>
+                        <button class="btn" onclick="updateCollisionSettings()">적용</button>
+                    </div>
+                    
+                    <div class="control-section">
+                        <h3>충돌 영역 관리</h3>
+                        <div class="form-group">
+                            <label for="worldBounds">월드 경계:</label>
+                            <input type="number" id="worldBounds" min="5.0" max="20.0" step="0.5" value="10.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="agentRadius">에이전트 반지름:</label>
+                            <input type="number" id="agentRadius" min="0.1" max="2.0" step="0.1" value="0.3">
+                        </div>
+                        <button class="btn" onclick="updateWorldSettings()">적용</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 정보 패널 -->
+            <div class="info-panel">
+                <h4>에이전트 정보</h4>
+                <div id="agentInfo">
+                    <!-- 에이전트 정보가 동적으로 표시됨 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 시뮬레이션 캔버스 -->
+        <div class="simulation-canvas">
+            <h2>시뮬레이션 시각화</h2>
+            <div class="canvas-container">
+                <canvas id="simCanvas" width="1200" height="800"></canvas>
+            </div>
+            <div class="info-panel">
+                <p><strong>현재 시간:</strong> <span id="currentTime">-</span></p>
+                <p><strong>연결 상태:</strong> <span id="connectionStatus">연결 중...</span></p>
+                <p><strong>현재 설정:</strong> 
+                    충돌거리: <span id="currentCollisionDistance">1.5</span> | 
+                    회피강도: <span id="currentAvoidanceStrength">2.0</span> | 
+                    모드: <span id="currentMovementMode">연속</span> | 
+                    속도: <span id="currentMovementSpeed">2.0</span> | 
+                    간격: <span id="currentGridInterval">1.2</span>s
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let socket;
+        let canvas, ctx;
+        let simulationState = {
+            is_running: false,
+            agents: [],
+            start_goal_poses: [],
+            grid_info: {},
+            collision_zones: []
+        };
+        
+        // 상태 업데이트 디바운싱을 위한 변수
+        let statusUpdateTimeout = null;
+        let lastUpdateTime = 0;
+        const UPDATE_THROTTLE_MS = 50; // 50ms마다 최대 1회 업데이트
+        
+        // 리사이즈 핸들 관련 변수
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCanvas();
+            initializeWebSocket();
+            setupEventListeners();
+            setupResizeHandle();
+            createAgentPositionInputs();
+            updateStatus();
+            updateCurrentSettingsDisplay(); // 초기 설정값 표시
+            // 초기 시작/목표 위치 표시
+            initializeStartGoalPositions();
+        });
+        
+        function initializeCanvas() {
+            canvas = document.getElementById('simCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 캔버스 크기 동적 조정
+            resizeCanvas();
+            
+            // 창 크기 변경 이벤트 리스너
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 초기 그리기
+            drawGrid();
+        }
+        
+        function resizeCanvas() {
+            const container = document.querySelector('.canvas-container');
+            const containerRect = container.getBoundingClientRect();
+            
+            // 1920x1200 해상도의 125% 상태 (1536x960)에서 전체를 볼 수 있도록 조정
+            // 메뉴바와 여백을 고려하여 캔버스 크기 계산
+            const maxWidth = Math.min(containerRect.width - 40, 1200); // 최대 1200px
+            const maxHeight = Math.min(containerRect.height - 40, 800); // 최대 800px
+            
+            // 기본 비율 유지 (1200:800 = 3:2)
+            const aspectRatio = 3 / 2;
+            let canvasWidth = maxWidth;
+            let canvasHeight = maxWidth / aspectRatio;
+            
+            if (canvasHeight > maxHeight) {
+                canvasHeight = maxHeight;
+                canvasWidth = maxHeight * aspectRatio;
+            }
+            
+            // 최소 크기 보장 (1920x1200 125% 상태에서도 보이도록)
+            canvasWidth = Math.max(canvasWidth, 800);
+            canvasHeight = Math.max(canvasHeight, 533);
+            
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            canvas.style.width = canvasWidth + 'px';
+            canvas.style.height = canvasHeight + 'px';
+            
+            // 그리드 다시 그리기 (시뮬레이션이 실행 중일 때만)
+            if (simulationState && simulationState.agents && simulationState.agents.length > 0) {
+                drawSimulation();
+            } else {
+                drawGrid();
+            }
+        }
+        
+        function initializeWebSocket() {
+            socket = io();
+            
+            socket.on('connect', function() {
+                console.log('WebSocket 연결됨');
+                document.getElementById('connectionStatus').textContent = '연결됨';
+                document.getElementById('connectionStatus').style.color = '#28a745';
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('WebSocket 연결 해제됨');
+                document.getElementById('connectionStatus').textContent = '연결 해제됨';
+                document.getElementById('connectionStatus').style.color = '#dc3545';
+            });
+            
+            socket.on('simulation_state', function(data) {
+                simulationState = data;
+                updateStatus();
+                drawSimulation();
+            });
+            
+            socket.on('agents_updated', function(data) {
+                simulationState.agents = data.agents;
+                drawSimulation();
+                updateAgentInfo();
+                
+                // 모든 에이전트가 목표에 도달했는지 확인
+                checkSimulationCompletion();
+            });
+            
+            socket.on('grid_updated', function(data) {
+                simulationState.grid_info = data.grid_info;
+                drawSimulation();
+            });
+            
+            socket.on('simulation_started', function(data) {
+                simulationState.is_running = true;
+                updateStatus();
+            });
+            
+            socket.on('simulation_stopped', function(data) {
+                simulationState.is_running = false;
+                updateStatus();
+            });
+            
+            socket.on('simulation_reset', function(data) {
+                console.log('시뮬레이션 리셋됨');
+                simulationState = {
+                    is_running: false,
+                    agents: [],
+                    start_goal_poses: [],
+                    grid_info: {},
+                    collision_zones: []
+                };
+                // 이전 상태를 리셋하여 상태 업데이트 강제 실행
+                previousRunningState = null;
+                updateStatus();
+                drawSimulation();
+                updateAgentInfo();
+                // 리셋 후 시작/목표 위치를 다시 표시 (사용자 설정값 유지)
+                initializeStartGoalPositions();
+            });
+            
+            socket.on('start_goal_updated', function(data) {
+                simulationState.start_goal_poses = data.start_goal_poses;
+                drawSimulation();
+            });
+            
+            socket.on('command_response', function(data) {
+                if (data.status === 'received') {
+                    console.log('설정 적용 완료');
+                }
+            });
+            
+            socket.on('collision_info_updated', function(data) {
+                // 충돌 정보가 변경되었을 때만 로그 출력
+                if (data.collision_info.length > 0) {
+                    console.log('충돌 정보 수신:', data.collision_info);
+                }
+                updateCollisionVisualization(data.collision_info);
+            });
+            
+            socket.on('collision_zones_updated', function(data) {
+                if (data.collision_zones) {
+                    simulationState.collision_zones = data.collision_zones;
+                    drawSimulation();
+                }
+            });
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('startStopBtn').addEventListener('click', toggleSimulation);
+            document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+            document.getElementById('toggleCollisionZonesBtn').addEventListener('click', toggleCollisionZones);
+            
+            // 상세 설정 입력 필드 변경 이벤트 리스너 추가
+            const detailInputs = ['collisionDistance', 'avoidanceStrength', 'predictionTime', 'repulsionPower', 'agentRadius', 'collisionWaitTime'];
+            detailInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        // 프리셋을 "사용자 정의"로 변경
+                        document.getElementById('collisionPreset').value = '사용자 정의';
+                    });
+                }
+            });
+        }
+        
+        function setupResizeHandle() {
+            const resizeHandle = document.getElementById('resizeHandle');
+            const controlPanel = document.getElementById('controlPanel');
+            
+            resizeHandle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(window.getComputedStyle(controlPanel).width, 10);
+                
+                // 마우스 커서 변경
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                
+                const newWidth = startWidth + (e.clientX - startX);
+                const minWidth = 250;
+                const maxWidth = 800;
+                
+                if (newWidth >= minWidth && newWidth <= maxWidth) {
+                    controlPanel.style.width = newWidth + 'px';
+                }
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                }
+            });
+            
+            // 창 크기 변경 시 최대 너비 조정
+            window.addEventListener('resize', function() {
+                const currentWidth = parseInt(window.getComputedStyle(controlPanel).width, 10);
+                const maxAllowedWidth = Math.min(800, window.innerWidth * 0.5);
+                
+                if (currentWidth > maxAllowedWidth) {
+                    controlPanel.style.width = maxAllowedWidth + 'px';
+                }
+            });
+        }
+        
+        function showTab(tabName) {
+            // 모든 탭 버튼 비활성화
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 모든 탭 콘텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 선택된 탭 활성화
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+        
+        function createAgentPositionInputs() {
+            const container = document.getElementById('agentPositions');
+            const numAgents = parseInt(document.getElementById('numAgents').value) || 3;
+            container.innerHTML = '';
+            
+            for (let i = 0; i < numAgents; i++) {
+                const agentDiv = document.createElement('div');
+                agentDiv.className = 'control-section';
+                agentDiv.innerHTML = `
+                    <h4>에이전트 ${i}</h4>
+                    <div class="form-group">
+                        <label>시작 위치 X:</label>
+                        <input type="number" id="startX${i}" value="${-5 + i * 2}" step="0.5" min="-10" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>시작 위치 Y:</label>
+                        <input type="number" id="startY${i}" value="-3" step="0.5" min="-10" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>목표 위치 X:</label>
+                        <input type="number" id="goalX${i}" value="${5 - i * 2}" step="0.5" min="-10" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label>목표 위치 Y:</label>
+                        <input type="number" id="goalY${i}" value="3" step="0.5" min="-10" max="10">
+                    </div>
+                `;
+                container.appendChild(agentDiv);
+            }
+        }
+        
+        function initializeStartGoalPositions() {
+            // 기본 시작/목표 위치 설정
+            const defaultPositions = [];
+            const numAgents = parseInt(document.getElementById('numAgents').value) || 3;
+            
+            for (let i = 0; i < numAgents; i++) {
+                const startX = -5 + i * 2;
+                const startY = -3;
+                const goalX = 5 - i * 2;
+                const goalY = 3;
+                
+                // 시작 위치
+                defaultPositions.push({
+                    type: 'start',
+                    position: { x: startX, y: startY },
+                    scale: { x: 0.5, y: 0.5, z: 0.5 },
+                    color: { r: 0, g: 1, b: 0, a: 0.7 }
+                });
+                
+                // 목표 위치
+                defaultPositions.push({
+                    type: 'goal',
+                    position: { x: goalX, y: goalY },
+                    scale: { x: 0.5, y: 0.5, z: 0.5 },
+                    color: { r: 1, g: 0, b: 0, a: 0.7 }
+                });
+            }
+            
+            simulationState.start_goal_poses = defaultPositions;
+            drawSimulation();
+        }
+        
+        function toggleSimulation() {
+            const startStopBtn = document.getElementById('startStopBtn');
+            
+            // WebSocket 연결 상태 확인
+            if (!socket || !socket.connected) {
+                console.error('서버 연결이 끊어져 있습니다. 페이지를 새로고침해주세요.');
+                alert('서버 연결이 끊어져 있습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            // 시뮬레이션이 실행 중이면 중지, 중지되어 있으면 시작
+            if (simulationState.is_running) {
+                console.log('시뮬레이션 중지');
+                stopSimulation();
+            } else {
+                console.log('시뮬레이션 시작');
+                startSimulation();
+            }
+        }
+        
+        function startSimulation() {
+            fetch('/api/start', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('시뮬레이션 시작됨');
+                        // 시작/목표 위치는 이미 설정되어 있으므로 다시 초기화하지 않음
+                    }
+                })
+                .catch(error => console.error('시뮬레이션 시작 실패:', error));
+        }
+        
+        function stopSimulation() {
+            fetch('/api/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('시뮬레이션 중지됨');
+                    }
+                })
+                .catch(error => console.error('시뮬레이션 중지 실패:', error));
+        }
+        
+        function resetSimulation() {
+            fetch('/api/reset', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('시뮬레이션 리셋됨');
+                        // 시뮬레이션 상태 초기화
+                        simulationState = {
+                            is_running: false,
+                            agents: [],
+                            start_goal_poses: [],
+                            grid_info: {},
+                            collision_zones: []
+                        };
+                        updateStatus();
+                        drawSimulation();
+                        updateAgentInfo();
+                    }
+                })
+                .catch(error => console.error('시뮬레이션 리셋 실패:', error));
+        }
+        
+        // 충돌 영역 시각화 상태
+        let showCollisionZones = true;
+        
+        function toggleCollisionZones() {
+            showCollisionZones = !showCollisionZones;
+            const button = document.getElementById('toggleCollisionZonesBtn');
+            
+            fetch('/api/toggle_collision_zones', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ show_collision_zones: showCollisionZones })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    button.textContent = showCollisionZones ? '충돌 영역 숨기기' : '충돌 영역 표시';
+                    button.className = showCollisionZones ? 'btn btn-danger' : 'btn';
+                    console.log(`충돌 영역 시각화 ${showCollisionZones ? '활성화' : '비활성화'}됨`);
+                }
+            })
+            .catch(error => console.error('충돌 영역 토글 실패:', error));
+        }
+        
+        function updateBasicSettings() {
+            const numAgents = document.getElementById('numAgents').value;
+            const updateRate = document.getElementById('updateRate').value;
+            const movementMode = document.getElementById('movementMode').value;
+            const gridCellSize = document.getElementById('gridCellSize').value;
+            const gridMoveInterval = document.getElementById('gridMoveInterval').value;
+            const movementSpeed = document.getElementById('movementSpeed').value;
+            
+            // 에이전트 수가 변경되면 위치 입력 필드 업데이트
+            const currentAgentCount = document.querySelectorAll('#agentPositions .control-section').length;
+            if (parseInt(numAgents) !== currentAgentCount) {
+                createAgentPositionInputs();
+            }
+            
+            // WebSocket 연결 상태 확인
+            if (!socket || !socket.connected) {
+                console.error('서버 연결이 끊어져 있습니다. 페이지를 새로고침해주세요.');
+                alert('서버 연결이 끊어져 있습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            socket.emit('control_command', {
+                command: 'update_basic_settings',
+                params: {
+                    num_agents: parseInt(numAgents),
+                    update_rate: parseInt(updateRate),
+                    movement_mode: parseInt(movementMode),
+                    grid_cell_size: parseFloat(gridCellSize),
+                    grid_move_interval: parseFloat(gridMoveInterval),
+                    movement_speed: parseFloat(movementSpeed)
+                }
+            });
+            
+            // 현재 설정값 업데이트
+            updateCurrentSettingsDisplay();
+            
+            console.log('설정 적용됨: 에이전트', numAgents, '개, 속도', movementSpeed);
+        }
+        
+        function applyCollisionPreset() {
+            const preset = document.getElementById('collisionPreset').value;
+            let settings = {};
+            
+            switch(preset) {
+                case 'performance':
+                    // 충돌회피 성능향상
+                    settings = {
+                        collision_distance: 1.8,
+                        avoidance_strength: 2.5,
+                        prediction_time: 0.5,
+                        repulsion_power: 0.6,
+                        agent_radius: 0.3,
+                        collision_wait_time: 0.8
+                    };
+                    break;
+                case 'smooth':
+                    // 부드러운 이동
+                    settings = {
+                        collision_distance: 1.5,
+                        avoidance_strength: 1.2,
+                        prediction_time: 0.7,
+                        repulsion_power: 0.4,
+                        agent_radius: 0.3,
+                        collision_wait_time: 1.2
+                    };
+                    break;
+                case 'fast':
+                    // 빠른 이동
+                    settings = {
+                        collision_distance: 1.2,
+                        avoidance_strength: 4.0,
+                        prediction_time: 0.3,
+                        repulsion_power: 0.8,
+                        agent_radius: 0.3,
+                        collision_wait_time: 0.5
+                    };
+                    break;
+                default:
+                    return; // 사용자 정의는 아무것도 하지 않음
+            }
+            
+            // 상세 설정 필드에 값 적용 (표시만)
+            Object.keys(settings).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = settings[key];
+                }
+            });
+            
+            // 현재 설정값 표시 업데이트
+            updateCurrentSettingsDisplay();
+            
+            // 자동으로 상세 설정 적용
+            updateDetailedSettings();
+            
+            console.log(`${preset} 프리셋 적용됨:`, settings);
+        }
+        
+        function toggleDetailedSettings() {
+            const checkbox = document.getElementById('showDetailedSettings');
+            const detailedSettings = document.getElementById('detailedSettings');
+            
+            if (checkbox.checked) {
+                detailedSettings.style.display = 'block';
+            } else {
+                detailedSettings.style.display = 'none';
+            }
+        }
+        
+        function updateDetailedSettings() {
+            const settings = {
+                collision_distance: parseFloat(document.getElementById('collisionDistance').value),
+                avoidance_strength: parseFloat(document.getElementById('avoidanceStrength').value),
+                prediction_time: parseFloat(document.getElementById('predictionTime').value),
+                repulsion_power: parseFloat(document.getElementById('repulsionPower').value),
+                agent_radius: parseFloat(document.getElementById('agentRadius').value),
+                collision_wait_time: parseFloat(document.getElementById('collisionWaitTime').value)
+            };
+            
+            // WebSocket 연결 상태 확인
+            if (!socket || !socket.connected) {
+                console.error('서버 연결이 끊어져 있습니다. 페이지를 새로고침해주세요.');
+                alert('서버 연결이 끊어져 있습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+            
+            socket.emit('control_command', {
+                command: 'update_collision_settings',
+                params: settings
+            });
+            
+            // 현재 설정값 업데이트
+            updateCurrentSettingsDisplay();
+            
+            // 프리셋을 "사용자 정의"로 변경
+            document.getElementById('collisionPreset').value = '사용자 정의';
+            
+            console.log('상세 충돌 설정 적용됨:', settings);
+        }
+        
+        function resetToDefaults() {
+            // 디폴트 값으로 초기화
+            document.getElementById('collisionDistance').value = '1.5';
+            document.getElementById('avoidanceStrength').value = '2.0';
+            document.getElementById('predictionTime').value = '0.5';
+            document.getElementById('repulsionPower').value = '0.5';
+            document.getElementById('agentRadius').value = '0.3';
+            document.getElementById('collisionWaitTime').value = '1.0';
+            
+            // 프리셋을 "사용자 정의"로 설정
+            document.getElementById('collisionPreset').value = 'custom';
+            
+            // 현재 설정값 표시 업데이트
+            updateCurrentSettingsDisplay();
+            
+            // 자동으로 상세 설정 적용
+            updateDetailedSettings();
+            
+            console.log('모든 파라미터가 디폴트 값으로 초기화되었습니다.');
+        }
+        
+        function updateCurrentSettingsDisplay() {
+            // 충돌 거리 업데이트
+            const collisionDistance = document.getElementById('collisionDistance').value;
+            document.getElementById('currentCollisionDistance').textContent = collisionDistance;
+            
+            // 회피 강도 업데이트
+            const avoidanceStrength = document.getElementById('avoidanceStrength').value;
+            document.getElementById('currentAvoidanceStrength').textContent = avoidanceStrength;
+            
+            // 움직임 모드 업데이트
+            const movementMode = document.getElementById('movementMode').value;
+            const modeText = movementMode === '0' ? '연속' : '그리드';
+            document.getElementById('currentMovementMode').textContent = modeText;
+            
+            // 이동 속도 업데이트
+            const movementSpeed = document.getElementById('movementSpeed').value;
+            document.getElementById('currentMovementSpeed').textContent = movementSpeed;
+            
+            // 그리드 이동 간격 업데이트
+            const gridInterval = document.getElementById('gridMoveInterval').value;
+            document.getElementById('currentGridInterval').textContent = gridInterval;
+        }
+        
+        function updateAgentPositions() {
+            const positions = [];
+            const startGoalPoses = [];
+            const numAgents = parseInt(document.getElementById('numAgents').value) || 3;
+            
+            for (let i = 0; i < numAgents; i++) {
+                const startXElement = document.getElementById(`startX${i}`);
+                const startYElement = document.getElementById(`startY${i}`);
+                const goalXElement = document.getElementById(`goalX${i}`);
+                const goalYElement = document.getElementById(`goalY${i}`);
+                
+                // 요소가 존재하는지 확인
+                if (startXElement && startYElement && goalXElement && goalYElement) {
+                    const startX = parseFloat(startXElement.value);
+                    const startY = parseFloat(startYElement.value);
+                    const goalX = parseFloat(goalXElement.value);
+                    const goalY = parseFloat(goalYElement.value);
+                    
+                    positions.push({
+                        id: i,
+                        start: { x: startX, y: startY },
+                        goal: { x: goalX, y: goalY }
+                    });
+                    
+                    // 시작 위치
+                    startGoalPoses.push({
+                        type: 'start',
+                        position: { x: startX, y: startY },
+                        scale: { x: 0.5, y: 0.5, z: 0.5 },
+                        color: { r: 0, g: 1, b: 0, a: 0.7 }
+                    });
+                    
+                    // 목표 위치
+                    startGoalPoses.push({
+                        type: 'goal',
+                        position: { x: goalX, y: goalY },
+                        scale: { x: 0.5, y: 0.5, z: 0.5 },
+                        color: { r: 1, g: 0, b: 0, a: 0.7 }
+                    });
+                }
+            }
+            
+            // 시뮬레이션 상태 업데이트
+            simulationState.start_goal_poses = startGoalPoses;
+            drawSimulation();
+            
+            socket.emit('control_command', {
+                command: 'update_agent_positions',
+                params: { positions: positions }
+            });
+            
+            console.log('에이전트 위치가 업데이트되었습니다:', positions);
+        }
+        
+        function updateCollisionSettings() {
+            const collisionDistance = document.getElementById('collisionDistance').value;
+            const avoidanceStrength = document.getElementById('avoidanceStrength').value;
+            const repulsionForce = document.getElementById('repulsionForce').value;
+            const collisionWaitTime = document.getElementById('collisionWaitTime').value;
+            
+            socket.emit('control_command', {
+                command: 'update_collision_settings',
+                params: {
+                    collision_distance: parseFloat(collisionDistance),
+                    avoidance_strength: parseFloat(avoidanceStrength),
+                    repulsion_force: parseFloat(repulsionForce),
+                    collision_wait_time: parseFloat(collisionWaitTime)
+                }
+            });
+        }
+        
+        function updateWorldSettings() {
+            const worldBounds = document.getElementById('worldBounds').value;
+            const agentRadius = document.getElementById('agentRadius').value;
+            
+            socket.emit('control_command', {
+                command: 'update_world_settings',
+                params: {
+                    world_bounds: parseFloat(worldBounds),
+                    agent_radius: parseFloat(agentRadius)
+                }
+            });
+        }
+        
+        function throttledUpdateStatus() {
+            const now = Date.now();
+            if (now - lastUpdateTime >= UPDATE_THROTTLE_MS) {
+                updateStatus();
+                lastUpdateTime = now;
+            } else {
+                // 다음 업데이트 예약
+                if (statusUpdateTimeout) {
+                    clearTimeout(statusUpdateTimeout);
+                }
+                statusUpdateTimeout = setTimeout(() => {
+                    updateStatus();
+                    lastUpdateTime = Date.now();
+                }, UPDATE_THROTTLE_MS - (now - lastUpdateTime));
+            }
+        }
+        
+        // 상태 업데이트를 위한 이전 상태 저장
+        let previousRunningState = null;
+        
+        function updateStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const startStopBtn = document.getElementById('startStopBtn');
+            
+            // 상태가 변경되지 않았으면 업데이트하지 않음
+            if (previousRunningState === simulationState.is_running) {
+                return;
+            }
+            
+            // 상태 업데이트
+            if (simulationState.is_running) {
+                statusIndicator.className = 'status-indicator status-running';
+                statusText.textContent = '실행 중';
+                startStopBtn.textContent = '시뮬레이션 중지';
+                startStopBtn.className = 'btn btn-danger';
+            } else {
+                statusIndicator.className = 'status-indicator status-stopped';
+                statusText.textContent = '중지됨';
+                startStopBtn.textContent = '시뮬레이션 시작';
+                startStopBtn.className = 'btn btn-success';
+            }
+            
+            // 이전 상태 업데이트
+            previousRunningState = simulationState.is_running;
+        }
+        
+        function updateAgentInfo() {
+            const container = document.getElementById('agentInfo');
+            container.innerHTML = '';
+            
+            simulationState.agents.forEach(agent => {
+                const agentDiv = document.createElement('div');
+                agentDiv.className = 'agent-info';
+                let collisionStatus = '';
+                if (agent.is_colliding) {
+                    collisionStatus = ' - <span class="collision-warning">충돌!</span>';
+                } else if (agent.is_collision_predicted) {
+                    collisionStatus = ' - <span class="collision-prediction">충돌 예상</span>';
+                }
+                agentDiv.innerHTML = `
+                    <span>에이전트 ${agent.id}</span>
+                    <span>(${agent.position.x.toFixed(1)}, ${agent.position.y.toFixed(1)})</span>
+                    ${collisionStatus}
+                `;
+                container.appendChild(agentDiv);
+            });
+        }
+        
+        function updateCollisionVisualization(collisionInfo) {
+            console.log('updateCollisionVisualization 호출:', collisionInfo);
+            
+            // 에이전트 정보 업데이트
+            if (simulationState.agents) {
+                // 모든 에이전트의 충돌 상태 초기화
+                simulationState.agents.forEach(agent => {
+                    agent.is_colliding = false;
+                    agent.is_collision_predicted = false;
+                });
+                
+                // 충돌 중인 에이전트 표시
+                collisionInfo.forEach(collision => {
+                    const agent = simulationState.agents.find(a => a.id === collision.agent_id);
+                    if (agent) {
+                        if (collision.collision_type === 'agent_agent') {
+                            agent.is_colliding = true;
+                            console.log(`에이전트 ${agent.id} 충돌 상태 설정`);
+                        } else if (collision.collision_type === 'predicted') {
+                            agent.is_collision_predicted = true;
+                            console.log(`에이전트 ${agent.id} 충돌 예상 상태 설정`);
+                        }
+                    }
+                });
+                
+                // 에이전트 정보 업데이트
+                updateAgentInfo();
+                
+                // 시뮬레이션 다시 그리기 (충돌 시각화 포함)
+                drawSimulation();
+            }
+        }
+        
+        function checkSimulationCompletion() {
+            // 자동 완료 체크를 비활성화 - 사용자가 수동으로 중지하도록 함
+            // 에이전트가 있고 시뮬레이션이 실행 중일 때만 확인
+            if (simulationState.agents.length === 0 || !simulationState.is_running) {
+                return;
+            }
+            
+            // 에이전트들의 상태만 로그로 출력 (자동 중지하지 않음)
+            let allAgentsMoving = true;
+            for (let i = 0; i < simulationState.agents.length; i++) {
+                const agent = simulationState.agents[i];
+                if (!agent.is_moving) {
+                    allAgentsMoving = false;
+                    break;
+                }
+            }
+            
+            // 모든 에이전트가 정지했다면 로그만 출력
+            if (!allAgentsMoving) {
+                console.log('모든 에이전트가 정지 상태입니다. 수동으로 중지 버튼을 눌러주세요.');
+            }
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            
+            // 캔버스 크기에 맞춰 격자 간격 계산
+            const cellWidth = canvas.width / 20; // -10부터 10까지 20개 셀
+            const cellHeight = canvas.height / 20;
+            
+            // 격자 그리기
+            for (let x = -10; x <= 10; x++) {
+                const canvasX = (x + 10) * cellWidth;
+                ctx.beginPath();
+                ctx.moveTo(canvasX, 0);
+                ctx.lineTo(canvasX, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = -10; y <= 10; y++) {
+                const canvasY = (y + 10) * cellHeight;
+                ctx.beginPath();
+                ctx.moveTo(0, canvasY);
+                ctx.lineTo(canvas.width, canvasY);
+                ctx.stroke();
+            }
+        }
+        
+        function drawSimulation() {
+            // 캔버스 클리어
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 격자 다시 그리기
+            drawGrid();
+            
+            // 시작/목표 위치 그리기
+            if (simulationState.start_goal_poses && simulationState.start_goal_poses.length > 0) {
+                drawStartGoalPoses();
+            }
+            
+            // 에이전트 그리기
+            simulationState.agents.forEach(agent => {
+                drawAgent(agent);
+            });
+            
+            // 격자 정보 그리기
+            if (simulationState.grid_info && simulationState.grid_info.lines) {
+                drawGridLines(simulationState.grid_info.lines);
+            }
+            
+            // 충돌 감지 영역 그리기
+            if (simulationState.collision_zones && showCollisionZones) {
+                drawCollisionZones(simulationState.collision_zones);
+            }
+        }
+        
+        function drawAgent(agent) {
+            const cellWidth = canvas.width / 20;
+            const cellHeight = canvas.height / 20;
+            const x = (agent.position.x + 10) * cellWidth;
+            const y = (agent.position.y + 10) * cellHeight;
+            const radius = agent.scale.x / 2 * Math.min(cellWidth, cellHeight); // 스케일을 캔버스 크기에 맞게 조정
+            
+            // 충돌 상태에 따른 색상 설정
+            let fillColor, strokeColor, strokeWidth;
+            if (agent.is_colliding) {
+                // 충돌 시 빨간색으로 변경
+                fillColor = `rgba(255, 0, 0, 0.8)`;
+                strokeColor = 'rgba(255, 255, 0, 1.0)'; // 노란색 경계선
+                strokeWidth = 3;
+            } else if (agent.is_collision_predicted) {
+                // 충돌 예상 시 주황색으로 변경
+                fillColor = `rgba(255, 165, 0, 0.8)`;
+                strokeColor = 'rgba(255, 255, 0, 1.0)'; // 노란색 경계선
+                strokeWidth = 2;
+            } else {
+                // 정상 상태
+                fillColor = `rgba(${agent.color.r * 255}, ${agent.color.g * 255}, ${agent.color.b * 255}, ${agent.color.a})`;
+                strokeColor = 'rgba(0, 0, 0, 0.5)'; // 검은색 경계선
+                strokeWidth = 1;
+            }
+            
+            // 에이전트 원 그리기
+            ctx.fillStyle = fillColor;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 경계선 그리기
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = strokeWidth;
+            ctx.stroke();
+            
+            // 에이전트 ID 텍스트
+            ctx.fillStyle = 'white';
+            ctx.font = `${Math.min(cellWidth, cellHeight) * 0.3}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(agent.id.toString(), x, y + 4);
+        }
+        
+        function drawStartGoalPoses() {
+            const cellWidth = canvas.width / 20;
+            const cellHeight = canvas.height / 20;
+            
+            simulationState.start_goal_poses.forEach(pose => {
+                const x = (pose.position.x + 10) * cellWidth;
+                const y = (pose.position.y + 10) * cellHeight;
+                const size = pose.scale.x * Math.min(cellWidth, cellHeight);
+                
+                if (pose.type === 'start') {
+                    // 시작 위치: 녹색 사각형
+                    ctx.fillStyle = `rgba(0, 255, 0, 0.7)`;
+                    ctx.fillRect(x - size/2, y - size/2, size, size);
+                    
+                    // 텍스트
+                    ctx.fillStyle = 'black';
+                    ctx.font = `${Math.min(cellWidth, cellHeight) * 0.3}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('S', x, y + 4);
+                } else {
+                    // 목표 위치: 빨간색 사각형
+                    ctx.fillStyle = `rgba(255, 0, 0, 0.7)`;
+                    ctx.fillRect(x - size/2, y - size/2, size, size);
+                    
+                    // 텍스트
+                    ctx.fillStyle = 'white';
+                    ctx.font = `${Math.min(cellWidth, cellHeight) * 0.3}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('G', x, y + 4);
+                }
+            });
+        }
+        
+        function drawGridLines(lines) {
+            const cellWidth = canvas.width / 20;
+            const cellHeight = canvas.height / 20;
+            
+            ctx.strokeStyle = 'rgba(0.3, 0.3, 0.3, 0.3)';
+            ctx.lineWidth = 2;
+            
+            lines.forEach(line => {
+                const startX = (line.start.x + 10) * cellWidth;
+                const startY = (line.start.y + 10) * cellHeight;
+                const endX = (line.end.x + 10) * cellWidth;
+                const endY = (line.end.y + 10) * cellHeight;
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            });
+        }
+        
+        function drawCollisionZones(collisionZones) {
+            const cellWidth = canvas.width / 20;
+            const cellHeight = canvas.height / 20;
+            
+            collisionZones.forEach((zone, index) => {
+                const x = (zone.position.x + 10) * cellWidth;
+                const y = (zone.position.y + 10) * cellHeight;
+                const radius = (zone.scale.x / 2) * Math.min(cellWidth, cellHeight);
+                
+                // 충돌 감지 영역 (빨간색)
+                if (zone.type === 'collision_detection_zones') {
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${zone.color.a})`;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]); // 점선
+                }
+                // 에이전트 반지름 영역 (파란색)
+                else if (zone.type === 'agent_radius_zones') {
+                    ctx.strokeStyle = `rgba(0, 0, 255, ${zone.color.a})`;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([]); // 실선
+                }
+                
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            });
+            
+            // 점선 스타일 초기화
+            ctx.setLineDash([]);
+        }
+        
+        // 시간 업데이트
+        setInterval(() => {
+            document.getElementById('currentTime').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+    </script>
+</body>
+</html>

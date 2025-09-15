@@ -1,0 +1,30 @@
+[0.408s] Invoking command in '/home/mnerd/mapf_sim_ws/mapf_simulator': PYTHONPATH=/home/mnerd/mapf_sim_ws/build/mapf_simulator/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mapf_simulator build --build-base /home/mnerd/mapf_sim_ws/build/mapf_simulator/build install --record /home/mnerd/mapf_sim_ws/build/mapf_simulator/install.log --single-version-externally-managed install_data
+[0.535s] running egg_info
+[0.536s] writing ../build/mapf_simulator/mapf_simulator.egg-info/PKG-INFO
+[0.536s] writing dependency_links to ../build/mapf_simulator/mapf_simulator.egg-info/dependency_links.txt
+[0.536s] writing entry points to ../build/mapf_simulator/mapf_simulator.egg-info/entry_points.txt
+[0.536s] writing requirements to ../build/mapf_simulator/mapf_simulator.egg-info/requires.txt
+[0.536s] writing top-level names to ../build/mapf_simulator/mapf_simulator.egg-info/top_level.txt
+[0.537s] reading manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+[0.537s] writing manifest file '../build/mapf_simulator/mapf_simulator.egg-info/SOURCES.txt'
+[0.538s] running build
+[0.538s] running build_py
+[0.538s] copying mapf_simulator/gui_control_node.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+[0.538s] copying mapf_simulator/simple_mapf_node.py -> /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator
+[0.538s] running install
+[0.538s] running install_lib
+[0.538s] copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/gui_control_node.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+[0.538s] copying /home/mnerd/mapf_sim_ws/build/mapf_simulator/build/lib/mapf_simulator/simple_mapf_node.py -> /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator
+[0.538s] byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/gui_control_node.py to gui_control_node.cpython-310.pyc
+[0.540s] byte-compiling /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator/simple_mapf_node.py to simple_mapf_node.cpython-310.pyc
+[0.541s] running install_data
+[0.542s] running install_egg_info
+[0.543s] removing '/home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator-0.0.0-py3.10.egg-info' (and everything under it)
+[0.543s] Copying ../build/mapf_simulator/mapf_simulator.egg-info to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages/mapf_simulator-0.0.0-py3.10.egg-info
+[0.544s] running install_scripts
+[0.559s] Installing gui_control_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+[0.560s] Installing mapf_simulator_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+[0.560s] Installing simple_mapf_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+[0.560s] Installing simple_test_node script to /home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/mapf_simulator
+[0.560s] writing list of installed files to '/home/mnerd/mapf_sim_ws/build/mapf_simulator/install.log'
+[0.577s] Invoked command in '/home/mnerd/mapf_sim_ws/mapf_simulator' returned '0': PYTHONPATH=/home/mnerd/mapf_sim_ws/build/mapf_simulator/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/mnerd/mapf_sim_ws/install/mapf_simulator/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mapf_simulator build --build-base /home/mnerd/mapf_sim_ws/build/mapf_simulator/build install --record /home/mnerd/mapf_sim_ws/build/mapf_simulator/install.log --single-version-externally-managed install_data
